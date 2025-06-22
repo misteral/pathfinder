@@ -1,4 +1,6 @@
-# Pathfinder Scripts
+# Pathfinder Scripts 🚧 WIP (Work in Progress)
+
+**⚠️ This project is currently under active development and may contain incomplete features or documentation.**
 
 This project contains utility scripts for AI-powered content generation.
 
@@ -170,3 +172,27 @@ This is the easiest way to work with the video generation system!
 - The scripts automatically load environment variables from the `.env` file
 - The `.env` file is gitignored for security
 - Make sure to keep your API keys secure and never commit them to version control
+
+## 🚧 Work in Progress
+
+This project is actively being developed. Current status:
+
+**Completed Features:**
+- ✅ Image generation with Azure DALL-E 3
+- ✅ Text-to-speech with Azure TTS
+- ✅ Video generation with Azure Sora
+- ✅ Interactive video management interface
+
+**In Development:**
+- 🔄 Enhanced error handling and validation
+- 🔄 Additional voice options and customization
+- 🔄 Batch processing capabilities
+- 🔄 Web interface for easier usage
+
+**Planned Features:**
+- 📋 Configuration management UI
+- 📋 Output format options
+- 📋 Integration with other AI services
+- 📋 Comprehensive testing suite
+
+Feel free to contribute or report issues!
