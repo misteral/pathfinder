@@ -1,0 +1,4 @@
+.env
+!.env.template
+.DS_Store
+.aider*

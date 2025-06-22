@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Клад короля пиратов - Интерактивное приключение</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #1a1a1a;
+            color: #e8e6e3;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr auto;
+            height: 100vh;
+            gap: 2px;
+            background-color: #2a2a2a;
+        }
+        
+        /* Левая панель с иллюстрацией */
+        .scene-panel {
+            background-color: #0a0a0a;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scene-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .scene-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+        }
+        
+        .location-name {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            color: #f4e4c1;
+        }
+        
+        /* Правая панель с текстом */
+        .story-panel {
+            background-color: #1e1e1e;
+            padding: 40px;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .story-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .story-text {
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            animation: fadeIn 0.8s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Выборы действий */
+        .choices-container {
+            margin-top: 40px;
+        }
+        
+        .choice-button {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border: 2px solid #444;
+            color: #e8e6e3;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .choice-button:hover {
+            background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+            border-color: #f4e4c1;
+            transform: translateX(5px);
+        }
+        
+        .choice-button::before {
+            content: '▸';
+            position: absolute;
+            left: -20px;
+            transition: left 0.3s ease;
+        }
+        
+        .choice-button:hover::before {
+            left: 10px;
+        }
+        
+        /* Нижняя панель с информацией */
+        .info-panel {
+            grid-column: 1 / -1;
+            background-color: #0a0a0a;
+            border-top: 2px solid #2a2a2a;
+            display: flex;
+            padding: 20px;
+            gap: 40px;
+            align-items: center;
+        }
+        
+        .character-stats {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f4e4c1;
+            margin-top: 5px;
+        }
+        
+        .health-bar {
+            width: 200px;
+            height: 30px;
+            background-color: #2a2a2a;
+            border: 2px solid #444;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8B0000 0%, #DC143C 100%);
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        
+        .health-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            z-index: 1;
+        }
+        
+        .inventory {
+            flex: 1;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .inventory-label {
+            font-size: 14px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        
+        .inventory-items {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .inventory-item {
+            width: 50px;
+            height: 50px;
+            background-color: #2a2a2a;
+            border: 2px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .inventory-item:hover {
+            border-color: #f4e4c1;
+            transform: scale(1.1);
+        }
+        
+        .inventory-item.empty {
+            opacity: 0.3;
+        }
+        
+        .tooltip {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #0a0a0a;
+            padding: 8px 12px;
+            border: 1px solid #444;
+            font-size: 12px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .inventory-item:hover .tooltip {
+            opacity: 1;
+        }
+        
+        /* Кнопки управления */
+        .control-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .control-button {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(42, 42, 42, 0.8);
+            border: 2px solid #444;
+            color: #e8e6e3;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-button:hover {
+            background-color: rgba(58, 58, 58, 0.9);
+            border-color: #f4e4c1;
+        }
+        
+        /* Боевой интерфейс */
+        .combat-interface {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(10, 10, 10, 0.95);
+            border: 3px solid #f4e4c1;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+        }
+        
+        .combat-title {
+            font-size: 28px;
+            color: #DC143C;
+            margin-bottom: 20px;
+        }
+        
+        .combat-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            gap: 40px;
+        }
+        
+        .combatant {
+            text-align: center;
+        }
+        
+        .combatant-name {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #f4e4c1;
+        }
+        
+        .dice-result {
+            font-size: 48px;
+            color: #f4e4c1;
+            margin: 20px 0;
+            animation: diceRoll 0.5s ease;
+        }
+        
+        @keyframes diceRoll {
+            0% { transform: rotate(0deg) scale(0.5); opacity: 0; }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); opacity: 1; }
+        }
+        
+        .combat-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .action-button {
+            padding: 10px 20px;
+            background-color: #2a2a2a;
+            border: 2px solid #444;
+            color: #e8e6e3;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            font-size: 16px;
+        }
+        
+        .action-button:hover {
+            background-color: #3a3a3a;
+            border-color: #f4e4c1;
+        }
+        
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 300px 1fr auto;
+            }
+            
+            .story-panel {
+                padding: 20px;
+            }
+            
+            .info-panel {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Панель с иллюстрацией -->
+        <div class="scene-panel">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Crect fill='%230a0a0a' width='800' height='600'/%3E%3Cpath d='M0 300 Q200 250 400 300 T800 300 L800 600 L0 600 Z' fill='%231a1a1a'/%3E%3Ccircle cx='100' cy='100' r='3' fill='%23fff' opacity='0.5'/%3E%3Ccircle cx='300' cy='50' r='2' fill='%23fff' opacity='0.3'/%3E%3Ccircle cx='600' cy='120' r='3' fill='%23fff' opacity='0.4'/%3E%3Cpath d='M200 400 L250 350 L300 400 L350 320 L400 400' stroke='%23333' stroke-width='3' fill='none'/%3E%3Ctext x='400' y='500' text-anchor='middle' fill='%23666' font-size='24' font-family='Georgia'%3EВход в пещеру%3C/text%3E%3C/svg%3E" 
+                 alt="Сцена" class="scene-image">
+            <div class="scene-overlay"></div>
+            <div class="location-name">Западный берег Отари</div>
+        </div>
+        
+        <!-- Панель с текстом и выборами -->
+        <div class="story-panel">
+            <div class="control-buttons">
+                <button class="control-button" title="Звук" onclick="toggleSound()">🔊</button>
+                <button class="control-button" title="Карта" onclick="showMap()">🗺️</button>
+                <button class="control-button" title="Журнал" onclick="showJournal()">📜</button>
+            </div>
+            
+            <div class="story-content">
+                <div class="story-text">
+                    Дорога приключений завела вас в Отари, небольшой посёлок на берегу острова Звёздного камня — огромного куска суши, поднятого древним богом со дна морского. Отари славится древесиной и построенными из неё кораблями, но вам до этого особого дела нет — вы жаждете захватывающих приключений!
+                    <br><br>
+                    До вас дошли слухи, что посёлок донимает чудище, убивающее скот, и мэр пообещал награду в 10 золотых всякому, кто положит конец его бесчинствам. Столь внушительная сумма позволит вам ни в чём не нуждаться как минимум месяц!
+                    <br><br>
+                    Вы находитесь перед входом в тёмную загадочную пещеру, около которой обнаруживается масса крупных отпечатков лап...
+                </div>
+                
+                <div class="choices-container">
+                    <button class="choice-button" onclick="makeChoice(1)">
+                        Затаиться и подождать у входа в пещеру
+                    </button>
+                    <button class="choice-button" onclick="makeChoice(2)">
+                        Смело войти в пещеру с мечом наготове
+                    </button>
+                    <button class="choice-button" onclick="makeChoice(3)">
+                        Осмотреть следы внимательнее
+                    </button>
+                    <button class="choice-button" onclick="makeChoice(4)">
+                        Вернуться в Отари за подкреплением
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Информационная панель -->
+        <div class="info-panel">
+            <div class="character-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Класс брони</div>
+                    <div class="stat-value">18</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Здоровье</div>
+                    <div class="health-bar">
+                        <div class="health-fill" style="width: 100%"></div>
+                        <div class="health-text">20/20</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="inventory">
+                <div class="inventory-label">Инвентарь:</div>
+                <div class="inventory-items">
+                    <div class="inventory-item">
+                        ⚔️
+                        <div class="tooltip">Короткий меч (1d6+4)</div>
+                    </div>
+                    <div class="inventory-item empty">
+                        <div class="tooltip">Пусто</div>
+                    </div>
+                    <div class="inventory-item empty">
+                        <div class="tooltip">Пусто</div>
+                    </div>
+                    <div class="inventory-item empty">
+                        <div class="tooltip">Пусто</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="character-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Золото</div>
+                    <div class="stat-value">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Боевой интерфейс (скрыт по умолчанию) -->
+    <div class="combat-interface">
+        <h2 class="combat-title">БОЙ!</h2>
+        <div class="combat-stats">
+            <div class="combatant">
+                <div class="combatant-name">Вы</div>
+                <div class="health-bar" style="width: 150px">
+                    <div class="health-fill" style="width: 100%"></div>
+                    <div class="health-text">20/20</div>
+                </div>
+            </div>
+            <div class="combatant">
+                <div class="combatant-name">Волк</div>
+                <div class="health-bar" style="width: 150px">
+                    <div class="health-fill" style="width: 100%"></div>
+                    <div class="health-text">15/15</div>
+                </div>
+            </div>
+        </div>
+        <div class="dice-result">🎲</div>
+        <div class="combat-actions">
+            <button class="action-button" onclick="attack()">Атаковать мечом</button>
+            <button class="action-button" onclick="takeCover()">Укрыться</button>
+            <button class="action-button" onclick="flee()">Сбежать</button>
+        </div>
+    </div>
+    
+    <script>
+        // Игровые данные
+        let gameState = {
+            currentSection: 1,
+            health: 20,
+            maxHealth: 20,
+            armorClass: 18,
+            inventory: ['sword'],
+            gold: 0,
+            flags: {
+                leverPulled: false,
+                hasBoneKey: false,
+                hasTorch: false
+            },
+            combatState: null
+        };
+        
+        // Звуковые эффекты (заглушки)
+        const sounds = {
+            click: () => console.log('Click sound'),
+            combat: () => console.log('Combat sound'),
+            victory: () => console.log('Victory sound'),
+            ambient: () => console.log('Ambient sound')
+        };
+        
+        // Функции управления
+        function makeChoice(choiceIndex) {
+            sounds.click();
+            
+            // Анимация перехода
+            const storyText = document.querySelector('.story-text');
+            storyText.style.animation = 'none';
+            setTimeout(() => {
+                storyText.style.animation = 'fadeIn 0.8s ease-in';
+            }, 10);
+            
+            // Логика выборов (упрощенная для демо)
+            if (gameState.currentSection === 1 && choiceIndex === 1) {
+                // Переход к разделу 13 - встреча с волком
+                showCombat();
+            }
+            
+            console.log(`Выбран вариант ${choiceIndex}`);
+        }
+        
+        function showCombat() {
+            document.querySelector('.combat-interface').style.display = 'block';
+            sounds.combat();
+            
+            gameState.combatState = {
+                enemy: 'wolf',
+                enemyHealth: 15,
+                enemyMaxHealth: 15,
+                enemyAC: 14,
+                turn: 'player'
+            };
+        }
+        
+        function attack() {
+            // Бросок d20
+            const roll = Math.floor(Math.random() * 20) + 1;
+            const attackBonus = 7; // Первая атака
+            const total = roll + attackBonus;
+            
+            // Анимация броска кости
+            const diceResult = document.querySelector('.dice-result');
+            diceResult.textContent = roll;
+            diceResult.style.animation = 'none';
+            setTimeout(() => {
+                diceResult.style.animation = 'diceRoll 0.5s ease';
+            }, 10);
+            
+            if (total >= gameState.combatState.enemyAC) {
+                // Попадание
+                const damage = Math.floor(Math.random() * 6) + 1 + 4;
+                gameState.combatState.enemyHealth -= damage;
+                console.log(`Попадание! Урон: ${damage}`);
+                
+                if (gameState.combatState.enemyHealth <= 0) {
+                    victory();
+                }
+            } else {
+                console.log('Промах!');
+            }
+            
+            // Ход противника
+            setTimeout(enemyTurn, 1500);
+        }
+        
+        function takeCover() {
+            gameState.armorClass = 20;
+            console.log('Вы укрылись! КБ повышен до 20');
+            setTimeout(enemyTurn, 1000);
+        }
+        
+        function flee() {
+            document.querySelector('.combat-interface').style.display = 'none';
+            console.log('Вы сбежали из боя!');
+        }
+        
+        function enemyTurn() {
+            // Логика хода противника
+            const roll = Math.floor(Math.random() * 20) + 1;
+            const attackBonus = 5;
+            const total = roll + attackBonus;
+            
+            if (total >= gameState.armorClass) {
+                const damage = Math.floor(Math.random() * 6) + 1 + 2;
+                gameState.health -= damage;
+                updateHealthDisplay();
+                console.log(`Волк кусает! Урон: ${damage}`);
+            }
+            
+            // Сброс укрытия
+            if (gameState.armorClass === 20) {
+                gameState.armorClass = 18;
+            }
+        }
+        
+        function victory() {
+            sounds.victory();
+            document.querySelector('.combat-interface').style.display = 'none';
+            console.log('Победа!');
+            
+            // Обновление инвентаря
+            gameState.gold += 10;
+            updateInventoryDisplay();
+        }
+        
+        function updateHealthDisplay() {
+            const healthPercent = (gameState.health / gameState.maxHealth) * 100;
+            document.querySelector('.health-fill').style.width = healthPercent + '%';
+            document.querySelector('.health-text').textContent = `${gameState.health}/${gameState.maxHealth}`;
+        }
+        
+        function updateInventoryDisplay() {
+            document.querySelector('.stat-value:last-child').textContent = gameState.gold;
+        }
+        
+        function toggleSound() {
+            console.log('Переключение звука');
+        }
+        
+        function showMap() {
+            console.log('Показать карту');
+        }
+        
+        function showJournal() {
+            console.log('Показать журнал');
+        }
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            sounds.ambient();
+            console.log('Игра "Клад короля пиратов" загружена!');
+        });
+    </script>
+</body>
+</html>
